@@ -1,0 +1,14 @@
+{
+    "lockout_time": 300,
+    "users": [
+        {
+            "id": 1,
+            "username": "admin",
+            "password": "admin123",
+            "name": "Administrator",
+            "failed_attempts": 0,
+            "locked_until": null,
+            "last_login": null
+        }
+    ]
+}
