@@ -21,87 +21,141 @@ function getBudgetRequestData() {
 }
 
 $action = sanitizeInput($_GET['action'] ?? ($_POST['action'] ?? 'list'));
-$budgetFile = __DIR__ . '/budget.json';
-$budgetData = readJson($budgetFile) ?? ['items' => [], 'last_id' => 0];
 
 switch ($action) {
-    case 'list':
-        $eventId = sanitizeInput($_GET['event_id'] ?? '');
-        $items = $budgetData['items'];
-        if ($eventId) {
-            $items = array_values(array_filter($items, function($item) use ($eventId) {
-                return $item['event_id'] === $eventId;
-            }));
-        }
-        echo json_encode(['success' => true, 'data' => $items]);
+    case 'update_client_budget':
+        updateClientBudget();
         break;
-    case 'create':
-        $data = getBudgetRequestData();
-        $description = $data['description'] ?? '';
-        $amount = $data['amount'] ?? '';
-        $eventId = $data['event_id'] ?? '';
 
-        if (!$description || !$amount || !$eventId) {
-            echo json_encode(['success' => false, 'error' => 'Dati budget incompleti']);
-            exit;
-        }
-
-        $budgetData['last_id'] = ($budgetData['last_id'] ?? 0) + 1;
-        $id = 'B' . str_pad((string)$budgetData['last_id'], 3, '0', STR_PAD_LEFT);
-
-        $item = [
-            'id' => $id,
-            'event_id' => $eventId,
-            'description' => $description,
-            'amount' => (float)$amount,
-            'type' => $data['type'] ?? 'planned',
-            'created_at' => date('c'),
-            'updated_at' => date('c')
-        ];
-
-        $budgetData['items'][] = $item;
-        writeJson($budgetFile, $budgetData);
-        echo json_encode(['success' => true, 'data' => $item]);
+    case 'get':
+        getEventBudget();
         break;
-    case 'update':
-        $data = getBudgetRequestData();
-        $id = $data['id'] ?? '';
-        if (!$id) {
-            echo json_encode(['success' => false, 'error' => 'ID mancante']);
-            exit;
-        }
 
-        foreach ($budgetData['items'] as &$item) {
-            if ($item['id'] === $id) {
-                $item['description'] = $data['description'] ?? $item['description'];
-                if (isset($data['amount'])) {
-                    $item['amount'] = (float)$data['amount'];
-                }
-                $item['type'] = $data['type'] ?? $item['type'];
-                $item['updated_at'] = date('c');
-                writeJson($budgetFile, $budgetData);
-                echo json_encode(['success' => true, 'data' => $item]);
-                exit;
-            }
-        }
-        echo json_encode(['success' => false, 'error' => 'Voce budget non trovata']);
+    case 'update_threshold':
+        updateBudgetThreshold();
         break;
-    case 'delete':
-        $data = getBudgetRequestData();
-        $id = $data['id'] ?? '';
-        if (!$id) {
-            echo json_encode(['success' => false, 'error' => 'ID mancante']);
-            exit;
-        }
 
-        $budgetData['items'] = array_values(array_filter($budgetData['items'], function($item) use ($id) {
-            return $item['id'] !== $id;
-        }));
-        writeJson($budgetFile, $budgetData);
-        echo json_encode(['success' => true, 'data' => true]);
-        break;
     default:
         echo json_encode(['success' => false, 'error' => 'Azione non valida']);
         break;
+}
+
+/**
+ * Aggiorna il budget totale del cliente per un evento
+ */
+function updateClientBudget() {
+    $data = getBudgetRequestData();
+    $event_id = $data['event_id'] ?? '';
+    $budget_client = floatval($data['budget_client'] ?? 0);
+
+    if (!$event_id) {
+        echo json_encode(['success' => false, 'error' => 'Evento non valido']);
+        return;
+    }
+
+    $eventsFile = __DIR__ . '/events.json';
+    $eventsData = readJson($eventsFile) ?? ['events' => [], 'last_id' => 0];
+
+    foreach ($eventsData['events'] as &$event) {
+        if ($event['id'] === $event_id) {
+            $event['budget_client'] = $budget_client;
+            $event['updated_at'] = date('c');
+            writeJson($eventsFile, $eventsData);
+            echo json_encode(['success' => true, 'budget_client' => $budget_client]);
+            return;
+        }
+    }
+
+    echo json_encode(['success' => false, 'error' => 'Evento non trovato']);
+}
+
+/**
+ * Recupera il budget completo di un evento
+ */
+function getEventBudget() {
+    $event_id = sanitizeInput($_GET['event_id'] ?? '');
+
+    if (!$event_id) {
+        echo json_encode(['success' => false, 'error' => 'ID evento mancante']);
+        return;
+    }
+
+    $eventsFile = __DIR__ . '/events.json';
+    $eventsData = readJson($eventsFile) ?? ['events' => []];
+
+    foreach ($eventsData['events'] as $event) {
+        if ($event['id'] === $event_id) {
+            // Calcola preventivo da servizi confermati/pagati
+            $budget_preventivo = 0;
+            if (!empty($event['servizi'])) {
+                foreach ($event['servizi'] as $servizio) {
+                    if (in_array($servizio['status'] ?? 'pending', ['confirmed', 'paid'])) {
+                        $budget_preventivo += floatval($servizio['price'] ?? 0);
+                    }
+                }
+            }
+
+            // Calcola percentuale
+            $budget_client = floatval($event['budget_client'] ?? 0);
+            $percentage = $budget_client > 0 ? ($budget_preventivo / $budget_client) * 100 : 0;
+
+            // Determina livello alert
+            $alert_level = 'green';
+            $threshold = intval($event['budget_alert_threshold'] ?? 80);
+
+            if ($percentage >= 95) {
+                $alert_level = 'red';
+            } elseif ($percentage >= $threshold) {
+                $alert_level = 'yellow';
+            } elseif ($percentage >= 80) {
+                $alert_level = 'orange';
+            }
+
+            echo json_encode([
+                'success' => true,
+                'data' => [
+                    'budget_client' => $budget_client,
+                    'budget_preventivo' => $budget_preventivo,
+                    'percentage' => round($percentage, 2),
+                    'alert_level' => $alert_level,
+                    'threshold' => $threshold,
+                    'remaining' => max(0, $budget_client - $budget_preventivo),
+                    'over_budget' => $budget_preventivo > $budget_client
+                ]
+            ]);
+            return;
+        }
+    }
+
+    echo json_encode(['success' => false, 'error' => 'Evento non trovato']);
+}
+
+/**
+ * Aggiorna la soglia di alert per il budget
+ */
+function updateBudgetThreshold() {
+    $data = getBudgetRequestData();
+    $event_id = $data['event_id'] ?? '';
+    $threshold = intval($data['threshold'] ?? 80);
+
+    if (!$event_id || $threshold < 50 || $threshold > 100) {
+        echo json_encode(['success' => false, 'error' => 'Parametri non validi']);
+        return;
+    }
+
+    $eventsFile = __DIR__ . '/events.json';
+    $eventsData = readJson($eventsFile) ?? ['events' => [], 'last_id' => 0];
+
+    foreach ($eventsData['events'] as &$event) {
+        if ($event['id'] === $event_id) {
+            $event['budget_alert_threshold'] = $threshold;
+            $event['updated_at'] = date('c');
+            writeJson($eventsFile, $eventsData);
+            echo json_encode(['success' => true, 'threshold' => $threshold]);
+            return;
+        }
+    }
+
+    echo json_encode(['success' => false, 'error' => 'Evento non trovato']);
 }
 ?>

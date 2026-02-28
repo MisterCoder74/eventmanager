@@ -53,8 +53,10 @@ switch ($action) {
             'id' => $id,
             'event_id' => $eventId,
             'title' => $title,
+            'description' => $data['description'] ?? '',
             'due_date' => $dueDate,
             'status' => $data['status'] ?? 'pending',
+            'priority' => $data['priority'] ?? 'medium',
             'notes' => $data['notes'] ?? '',
             'created_at' => date('c'),
             'updated_at' => date('c')
@@ -75,8 +77,10 @@ switch ($action) {
         foreach ($tasksData['tasks'] as &$task) {
             if ($task['id'] === $id) {
                 $task['title'] = $data['title'] ?? $task['title'];
+                $task['description'] = $data['description'] ?? $task['description'];
                 $task['due_date'] = $data['due_date'] ?? $task['due_date'];
                 $task['status'] = $data['status'] ?? $task['status'];
+                $task['priority'] = $data['priority'] ?? $task['priority'];
                 $task['notes'] = $data['notes'] ?? $task['notes'];
                 $task['updated_at'] = date('c');
                 writeJson($tasksFile, $tasksData);
