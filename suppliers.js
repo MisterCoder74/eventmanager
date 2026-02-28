@@ -12,15 +12,23 @@ async function loadSuppliers() {
         if (result.success) {
             allSuppliers = result.data;
             displaySuppliers();
+        } else {
+            alert(result.error || 'Errore caricamento fornitori');
         }
     } catch (error) {
         console.error('Error loading suppliers:', error);
+        alert('Errore di comunicazione con il server');
     }
 }
 
 // Display suppliers in table
 function displaySuppliers() {
     const tbody = document.querySelector('#suppliersTable tbody');
+    if (!tbody) {
+        console.error('Elemento #suppliersTable tbody non trovato');
+        return;
+    }
+
     tbody.innerHTML = allSuppliers.map(supplier => `
         <tr>
             <td>${escapeHtml(supplier.id)}</td>
@@ -38,86 +46,51 @@ function displaySuppliers() {
     `).join('');
 }
 
-// Save supplier (create or update)
-document.getElementById('supplierForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-
-    // Prevenzione doppio submit
-    const submitBtn = this.querySelector('button[type="submit"]');
-    if (submitBtn.disabled) return;
-    submitBtn.disabled = true;
-    const originalText = submitBtn.textContent;
-    submitBtn.textContent = 'Salvataggio...';
-
-    const formData = new FormData(this);
-    const data = Object.fromEntries(formData.entries());
-    const supplierId = document.getElementById('supplierId').value;
-
-    const action = supplierId ? 'update' : 'create';
-
-    try {
-        const response = await fetch(`api_suppliers.php?action=${action}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            bootstrap.Modal.getInstance(document.getElementById('supplierModal')).hide();
-            loadSuppliers();
-        } else {
-            alert(result.error || 'Errore nel salvataggio');
-        }
-    } catch (error) {
-        console.error('Error saving supplier:', error);
-        alert('Errore di comunicazione con il server');
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-    }
-});
-
 // Edit supplier
 function editSupplier(id) {
     const supplier = allSuppliers.find(s => s.id === id);
-    if (!supplier) return;
+    if (!supplier) {
+        console.error('Fornitore non trovato:', id);
+        return;
+    }
 
     const supplierIdInput = document.getElementById('supplierId');
     if (!supplierIdInput) {
-        console.error('Elemento supplierId non trovato');
+        console.error('Elemento #supplierId non trovato');
         return;
     }
-    
-    supplierIdInput.value = supplier.id;
-    
-    const nameInput = document.querySelector('[name="name"]');
-    if (nameInput) nameInput.value = supplier.name;
-    
-    const typeInput = document.querySelector('[name="type"]');
-    if (typeInput) typeInput.value = supplier.type || '';
-    
-    const emailInput = document.querySelector('[name="email"]');
-    if (emailInput) emailInput.value = supplier.email || '';
-    
-    const phoneInput = document.querySelector('[name="phone"]');
-    if (phoneInput) phoneInput.value = supplier.phone || '';
-    
-    const addressInput = document.querySelector('[name="address"]');
-    if (addressInput) addressInput.value = supplier.address || '';
-    
-    const contactPersonInput = document.querySelector('[name="contact_person"]');
-    if (contactPersonInput) contactPersonInput.value = supplier.contact_person || '';
-    
-    const websiteInput = document.querySelector('[name="website"]');
-    if (websiteInput) websiteInput.value = supplier.website || '';
-    
-    const notesInput = document.querySelector('[name="notes"]');
-    if (notesInput) notesInput.value = supplier.notes || '';
 
-    document.getElementById('supplierModalTitle').textContent = 'Modifica Fornitore';
-    new bootstrap.Modal(document.getElementById('supplierModal')).show();
+    supplierIdInput.value = supplier.id;
+
+    const elements = {
+        'name': supplier.name,
+        'type': supplier.type || '',
+        'email': supplier.email || '',
+        'phone': supplier.phone || '',
+        'address': supplier.address || '',
+        'contact_person': supplier.contact_person || '',
+        'website': supplier.website || '',
+        'notes': supplier.notes || ''
+    };
+
+    for (const [name, value] of Object.entries(elements)) {
+        const elem = document.querySelector(`[name="${name}"]`);
+        if (elem) {
+            elem.value = value;
+        } else {
+            console.warn(`Elemento [name="${name}"] non trovato`);
+        }
+    }
+
+    const titleElement = document.getElementById('supplierModalTitle');
+    if (titleElement) {
+        titleElement.textContent = 'Modifica Fornitore';
+    }
+
+    const modalElement = document.getElementById('supplierModal');
+    if (modalElement) {
+        new bootstrap.Modal(modalElement).show();
+    }
 }
 
 // Delete supplier
@@ -151,11 +124,15 @@ async function viewServices(supplierId) {
     currentSupplierId = supplierId;
     const supplier = allSuppliers.find(s => s.id === supplierId);
 
-    if (supplier) {
-        document.getElementById('supplierServicesTitle').textContent = `Servizi offerti da ${escapeHtml(supplier.name)}`;
+    const titleElement = document.getElementById('supplierServicesTitle');
+    if (titleElement) {
+        titleElement.textContent = supplier ? `Servizi offerti da ${escapeHtml(supplier.name)}` : 'Servizi';
     }
 
-    document.getElementById('currentSupplierId').value = supplierId;
+    const currentSupplierIdInput = document.getElementById('currentSupplierId');
+    if (currentSupplierIdInput) {
+        currentSupplierIdInput.value = supplierId;
+    }
 
     try {
         const response = await fetch(`api_services.php?by_supplier=true&supplier_id=${supplierId}`, { cache: 'no-store' });
@@ -164,17 +141,27 @@ async function viewServices(supplierId) {
         if (result.success) {
             allServices = result.data;
             displaySupplierServices();
+        } else {
+            alert(result.error || 'Errore caricamento servizi');
         }
     } catch (error) {
         console.error('Error loading services:', error);
+        alert('Errore di comunicazione con il server');
     }
 
-    new bootstrap.Modal(document.getElementById('servicesModal')).show();
+    const modalElement = document.getElementById('servicesModal');
+    if (modalElement) {
+        new bootstrap.Modal(modalElement).show();
+    }
 }
 
 // Display supplier services
 function displaySupplierServices() {
     const tbody = document.getElementById('supplierServicesTable');
+    if (!tbody) {
+        console.error('Elemento #supplierServicesTable non trovato');
+        return;
+    }
 
     if (allServices.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" class="text-center">Nessun servizio</td></tr>';
@@ -198,12 +185,29 @@ function displaySupplierServices() {
 
 // Save supplier service
 async function saveSupplierService() {
-    const serviceId = document.getElementById('supplierServiceId').value;
-    const name = document.getElementById('supplierServiceName').value.trim();
-    const category = document.getElementById('supplierServiceCategory').value;
-    const price = document.getElementById('supplierServicePrice').value;
-    const description = document.getElementById('supplierServiceDescription').value.trim();
-    const notes = document.getElementById('supplierServiceNotes').value.trim();
+    if (!currentSupplierId) {
+        alert('Nessun fornitore selezionato');
+        return;
+    }
+
+    const serviceIdElement = document.getElementById('supplierServiceId');
+    const nameElement = document.getElementById('supplierServiceName');
+    const categoryElement = document.getElementById('supplierServiceCategory');
+    const priceElement = document.getElementById('supplierServicePrice');
+    const descriptionElement = document.getElementById('supplierServiceDescription');
+    const notesElement = document.getElementById('supplierServiceNotes');
+
+    if (!nameElement || !categoryElement || !priceElement) {
+        alert('Elementi del form non trovati');
+        return;
+    }
+
+    const serviceId = serviceIdElement ? serviceIdElement.value : '';
+    const name = nameElement.value.trim();
+    const category = categoryElement.value;
+    const price = priceElement.value;
+    const description = descriptionElement ? descriptionElement.value.trim() : '';
+    const notes = notesElement ? notesElement.value.trim() : '';
 
     if (!name || !category || price === '') {
         alert('Nome, categoria e prezzo sono obbligatori');
@@ -219,15 +223,13 @@ async function saveSupplierService() {
         notes: notes
     };
 
-    const action = serviceId ? 'update' : 'create';
-    let url = `api_services.php?action=${action}`;
-
     if (serviceId) {
         data.id = serviceId;
     }
 
     try {
-        const response = await fetch(url, {
+        const action = serviceId ? 'update' : 'create';
+        const response = await fetch(`api_services.php?action=${action}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -250,17 +252,38 @@ async function saveSupplierService() {
 // Edit supplier service
 function editSupplierService(serviceId) {
     const service = allServices.find(s => s.id === serviceId);
-    if (!service) return;
+    if (!service) {
+        console.error('Servizio non trovato:', serviceId);
+        return;
+    }
 
-    document.getElementById('supplierServiceId').value = service.id;
-    document.getElementById('supplierServiceName').value = service.name;
-    document.getElementById('supplierServiceCategory').value = service.category;
-    document.getElementById('supplierServicePrice').value = service.price;
-    document.getElementById('supplierServiceDescription').value = service.description || '';
-    document.getElementById('supplierServiceNotes').value = service.notes || '';
+    const elements = {
+        'supplierServiceId': service.id,
+        'supplierServiceName': service.name,
+        'supplierServiceCategory': service.category,
+        'supplierServicePrice': service.price,
+        'supplierServiceDescription': service.description || '',
+        'supplierServiceNotes': service.notes || ''
+    };
 
-    document.getElementById('serviceSupplierModalTitle').textContent = 'Modifica Servizio';
-    new bootstrap.Modal(document.getElementById('serviceSupplierModal')).show();
+    for (const [elemId, value] of Object.entries(elements)) {
+        const elem = document.getElementById(elemId);
+        if (elem) {
+            elem.value = value;
+        } else {
+            console.warn(`Elemento #${elemId} non trovato`);
+        }
+    }
+
+    const titleElement = document.getElementById('serviceSupplierModalTitle');
+    if (titleElement) {
+        titleElement.textContent = 'Modifica Servizio';
+    }
+
+    const modalElement = document.getElementById('serviceSupplierModal');
+    if (modalElement) {
+        new bootstrap.Modal(modalElement).show();
+    }
 }
 
 // Delete supplier service
@@ -289,28 +312,6 @@ async function deleteSupplierService(serviceId) {
     }
 }
 
-// Reset form when supplier modal opens
-document.getElementById('supplierModal').addEventListener('show.bs.modal', function(event) {
-    const button = event.relatedTarget;
-    if (button && !button.getAttribute('onclick')) {
-        // New supplier button
-        document.getElementById('supplierForm').reset();
-        document.getElementById('supplierId').value = '';
-        document.getElementById('supplierModalTitle').textContent = 'Nuovo Fornitore';
-    }
-});
-
-// Reset form when service modal opens
-document.getElementById('serviceSupplierModal').addEventListener('show.bs.modal', function(event) {
-    const button = event.relatedTarget;
-    if (button && !button.getAttribute('onclick')) {
-        // New service button
-        document.getElementById('supplierServiceForm').reset();
-        document.getElementById('supplierServiceId').value = '';
-        document.getElementById('serviceSupplierModalTitle').textContent = 'Nuovo Servizio';
-    }
-});
-
 // Helper: Escape HTML
 function escapeHtml(text) {
     if (!text) return '';
@@ -319,7 +320,125 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Initialize
+// Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', function() {
+    const supplierForm = document.getElementById('supplierForm');
+
+    if (!supplierForm) {
+        console.warn('Elemento #supplierForm non trovato');
+        return;
+    }
+
+    supplierForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const submitBtn = this.querySelector('button[type="submit"]');
+        if (!submitBtn) {
+            console.error('Bottone submit non trovato');
+            return;
+        }
+
+        if (submitBtn.disabled) {
+            console.log('Submit già in corso, ignoro click');
+            return;
+        }
+
+        const originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Salvataggio...';
+
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData.entries());
+        const supplierId = document.getElementById('supplierId').value;
+
+        const action = supplierId ? 'update' : 'create';
+
+        try {
+            const response = await fetch(`api_suppliers.php?action=${action}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                bootstrap.Modal.getInstance(document.getElementById('supplierModal')).hide();
+                loadSuppliers();
+            } else {
+                alert(result.error || 'Errore nel salvataggio');
+            }
+        } catch (error) {
+            console.error('Error saving supplier:', error);
+            alert('Errore di comunicazione con il server');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        }
+    });
+
+    const supplierModal = document.getElementById('supplierModal');
+    if (supplierModal) {
+        supplierModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            if (button && !button.getAttribute('onclick')) {
+                const form = document.getElementById('supplierForm');
+                if (form) {
+                    form.reset();
+                }
+
+                const supplierIdInput = document.getElementById('supplierId');
+                if (supplierIdInput) {
+                    supplierIdInput.value = '';
+                }
+
+                const titleElement = document.getElementById('supplierModalTitle');
+                if (titleElement) {
+                    titleElement.textContent = 'Nuovo Fornitore';
+                }
+            }
+        });
+    }
+
+    const serviceSupplierModal = document.getElementById('serviceSupplierModal');
+    if (serviceSupplierModal) {
+        serviceSupplierModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+
+            const serviceForm = document.getElementById('serviceSupplierForm');
+            if (!serviceForm) {
+                console.warn('Elemento #serviceSupplierForm non trovato nel DOM');
+                return;
+            }
+
+            if (button && !button.getAttribute('onclick')) {
+                serviceForm.reset();
+
+                const elements = [
+                    'supplierServiceId',
+                    'supplierServiceName',
+                    'supplierServiceCategory',
+                    'supplierServicePrice',
+                    'supplierServiceDescription',
+                    'supplierServiceNotes'
+                ];
+
+                elements.forEach(elemId => {
+                    const elem = document.getElementById(elemId);
+                    if (elem) {
+                        elem.value = '';
+                    } else {
+                        console.warn(`Elemento #${elemId} non trovato`);
+                    }
+                });
+
+                const titleElement = document.getElementById('serviceSupplierModalTitle');
+                if (titleElement) {
+                    titleElement.textContent = 'Nuovo Servizio';
+                }
+            }
+        });
+    }
+
     loadSuppliers();
 });
