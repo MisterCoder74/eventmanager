@@ -1,80 +1,38 @@
 <?php
 /**
- * File locking and JSON management functions
- * All file paths use __DIR__ for folder-agnostic behavior
+ * JSON Management Functions (NO LOCKING)
+ * Simplified version without file locking
  */
 
 /**
- * Read JSON file with file locking
+ * Read JSON file
  */
 function readJson($filepath) {
-    return withLock($filepath, function() use ($filepath) {
-        if (!file_exists($filepath)) {
-            return null;
-        }
-        $content = file_get_contents($filepath);
-        return json_decode($content, true);
-    });
+    if (!file_exists($filepath)) {
+        return null;
+    }
+
+    $content = file_get_contents($filepath);
+    if ($content === false) {
+        return null;
+    }
+
+    $data = json_decode($content, true);
+    return $data;
 }
 
 /**
- * Write JSON file with file locking
+ * Write JSON file (atomic operation with LOCK_EX)
+ * LOCK_EX ensures atomic write without blocking lock
  */
 function writeJson($filepath, $data) {
-    return withLock($filepath, function() use ($filepath, $data) {
-        return file_put_contents($filepath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) !== false;
-    });
-}
-
-/**
- * Acquire exclusive lock on file
- */
-function acquireLock($filepath, $timeout = 5) {
-    $lockfile = $filepath . '.lock';
-    $start = microtime(true);
-    $handle = fopen($lockfile, 'w');
-
-    if (!$handle) {
+    $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    if ($json === false) {
         return false;
     }
 
-    while (microtime(true) - $start < $timeout) {
-        if (flock($handle, LOCK_EX | LOCK_NB)) {
-            return $handle;
-        }
-        usleep(50000); // 50ms retry
-    }
-
-    fclose($handle);
-    return false;
-}
-
-/**
- * Release file lock
- */
-function releaseLock($lockHandle) {
-    if ($lockHandle) {
-        flock($lockHandle, LOCK_UN);
-        fclose($lockHandle);
-    }
-}
-
-/**
- * Execute callback with automatic file locking
- */
-function withLock($filepath, callable $callback, $timeout = 5) {
-    $lock = acquireLock($filepath, $timeout);
-
-    if ($lock === false) {
-        throw new Exception("Could not acquire lock on file: " . basename($filepath));
-    }
-
-    try {
-        $result = $callback();
-        return $result;
-    } finally {
-        releaseLock($lock);
-    }
+    $result = file_put_contents($filepath, $json, LOCK_EX);
+    return $result !== false;
 }
 
 /**
@@ -106,5 +64,58 @@ function validatePhone($phone) {
  */
 function validateDate($date) {
     return (bool)DateTime::createFromFormat('Y-m-d', $date);
+}
+
+/**
+ * Backup JSON file before modification
+ */
+function backupJsonFile($filepath) {
+    if (!file_exists($filepath)) {
+        return false;
+    }
+
+    $backupPath = $filepath . '.backup.' . time();
+    return copy($filepath, $backupPath);
+}
+
+/**
+ * Write JSON with automatic backup
+ */
+function writeJsonWithBackup($filepath, $data) {
+    if (file_exists($filepath)) {
+        backupJsonFile($filepath);
+    }
+
+    return writeJson($filepath, $data);
+}
+
+/**
+ * Validate JSON file integrity
+ */
+function validateJson($filepath) {
+    if (!file_exists($filepath)) {
+        return false;
+    }
+
+    $content = file_get_contents($filepath);
+    $decoded = json_decode($content, true);
+
+    return json_last_error() === JSON_ERROR_NONE;
+}
+
+/**
+ * Restore from latest backup
+ */
+function restoreFromBackup($filepath) {
+    $backupFiles = glob($filepath . '.backup.*');
+
+    if (empty($backupFiles)) {
+        return false;
+    }
+
+    rsort($backupFiles);
+    $latestBackup = $backupFiles[0];
+
+    return copy($latestBackup, $filepath);
 }
 ?>
