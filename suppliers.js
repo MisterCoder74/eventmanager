@@ -42,6 +42,13 @@ function displaySuppliers() {
 document.getElementById('supplierForm').addEventListener('submit', async function(e) {
     e.preventDefault();
 
+    // Prevenzione doppio submit
+    const submitBtn = this.querySelector('button[type="submit"]');
+    if (submitBtn.disabled) return;
+    submitBtn.disabled = true;
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Salvataggio...';
+
     const formData = new FormData(this);
     const data = Object.fromEntries(formData.entries());
     const supplierId = document.getElementById('supplierId').value;
@@ -66,6 +73,9 @@ document.getElementById('supplierForm').addEventListener('submit', async functio
     } catch (error) {
         console.error('Error saving supplier:', error);
         alert('Errore di comunicazione con il server');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
     }
 });
 
@@ -74,15 +84,37 @@ function editSupplier(id) {
     const supplier = allSuppliers.find(s => s.id === id);
     if (!supplier) return;
 
-    document.getElementById('supplierId').value = supplier.id;
-    document.querySelector('[name="name"]').value = supplier.name;
-    document.querySelector('[name="type"]').value = supplier.type || '';
-    document.querySelector('[name="email"]').value = supplier.email || '';
-    document.querySelector('[name="phone"]').value = supplier.phone || '';
-    document.querySelector('[name="address"]').value = supplier.address || '';
-    document.querySelector('[name="contact_person"]').value = supplier.contact_person || '';
-    document.querySelector('[name="website"]').value = supplier.website || '';
-    document.querySelector('[name="notes"]').value = supplier.notes || '';
+    const supplierIdInput = document.getElementById('supplierId');
+    if (!supplierIdInput) {
+        console.error('Elemento supplierId non trovato');
+        return;
+    }
+    
+    supplierIdInput.value = supplier.id;
+    
+    const nameInput = document.querySelector('[name="name"]');
+    if (nameInput) nameInput.value = supplier.name;
+    
+    const typeInput = document.querySelector('[name="type"]');
+    if (typeInput) typeInput.value = supplier.type || '';
+    
+    const emailInput = document.querySelector('[name="email"]');
+    if (emailInput) emailInput.value = supplier.email || '';
+    
+    const phoneInput = document.querySelector('[name="phone"]');
+    if (phoneInput) phoneInput.value = supplier.phone || '';
+    
+    const addressInput = document.querySelector('[name="address"]');
+    if (addressInput) addressInput.value = supplier.address || '';
+    
+    const contactPersonInput = document.querySelector('[name="contact_person"]');
+    if (contactPersonInput) contactPersonInput.value = supplier.contact_person || '';
+    
+    const websiteInput = document.querySelector('[name="website"]');
+    if (websiteInput) websiteInput.value = supplier.website || '';
+    
+    const notesInput = document.querySelector('[name="notes"]');
+    if (notesInput) notesInput.value = supplier.notes || '';
 
     document.getElementById('supplierModalTitle').textContent = 'Modifica Fornitore';
     new bootstrap.Modal(document.getElementById('supplierModal')).show();
