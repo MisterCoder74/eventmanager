@@ -437,7 +437,7 @@ if (!empty($event['client_id'])) {
         window.currentEventId = <?php echo json_encode($event['id']); ?>;
     </script>
     <script src="app.js"></script>
-    <script src="events.js"></script>
+    <script src="event-detail.js"></script>
 </body>
 </html>
 

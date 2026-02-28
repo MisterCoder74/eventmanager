@@ -166,7 +166,7 @@ const setupEventDetail = () => {
         }
 
         try {
-            const result = await apiRequest(`api_services.php?by_supplier=true&supplier_id=${supplierId}`);
+            const result = await apiRequest(`api_services.php?action=by_supplier&supplier_id=${supplierId}`);
             if (result.success) {
                 serviceSelect.innerHTML = '<option value="">Seleziona servizio</option>' +
                     result.data.map(s => `<option value="${s.id}" data-price="${s.price}">${escapeHtml(s.name)} - €${parseFloat(s.price).toFixed(2)}</option>`).join('');
