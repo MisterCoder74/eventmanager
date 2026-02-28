@@ -28,6 +28,7 @@ if (isset($_GET['logout'])) {
                     <li class="nav-item"><a class="nav-link" href="eventi.php">Eventi</a></li>
                     <li class="nav-item"><a class="nav-link active" href="clienti.php">Clienti</a></li>
                     <li class="nav-item"><a class="nav-link" href="fornitori.php">Fornitori</a></li>
+                    <li class="nav-item"><a class="nav-link" href="task.php">Task</a></li>
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item dropdown">

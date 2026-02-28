@@ -54,6 +54,7 @@ $fileMap = [
     'clients' => ['file' => __DIR__ . '/clients.json', 'key' => 'clients'],
     'suppliers' => ['file' => __DIR__ . '/suppliers.json', 'key' => 'suppliers'],
     'tasks' => ['file' => __DIR__ . '/tasks.json', 'key' => 'tasks'],
+    'services' => ['file' => __DIR__ . '/services.json', 'key' => 'services'],
     'budget' => ['file' => __DIR__ . '/budget.json', 'key' => 'items']
 ];
 
