@@ -93,8 +93,14 @@ if (!empty($event['client_id'])) {
 
     <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h1><?php echo htmlspecialchars($event['title']); ?></h1>
-            <div class="d-flex gap-2">
+            <div>
+                <h1><?php echo htmlspecialchars($event['title']); ?></h1>
+                <p class="text-muted mb-0">ID: <?php echo htmlspecialchars($event['id']); ?></p>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-warning" onclick="exportEventReport('html')">📊 Esporta HTML</button>
+                <button class="btn btn-info" onclick="exportEventReport('txt')">📄 Esporta TXT</button>
+                <button class="btn btn-success" onclick="exportEventReport('print')">🖨️ Stampa/PDF</button>
                 <button class="btn btn-primary" onclick="openEditEventModal()">✏️ Modifica Evento</button>
                 <a href="eventi.php" class="btn btn-outline-secondary">← Torna</a>
             </div>
