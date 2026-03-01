@@ -91,3 +91,12 @@ body {
 .list-group-item:hover {
     background-color: rgba(0, 0, 0, 0.02);
 }
+
+/* Form control static for read-only display values */
+.form-control-static {
+    padding: 0.375rem 0.75rem;
+    min-height: calc(1.5em + 0.75rem + 2px);
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    background-color: #f8f9fa;
+}

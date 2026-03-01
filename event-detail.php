@@ -94,7 +94,10 @@ if (!empty($event['client_id'])) {
     <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h1><?php echo htmlspecialchars($event['title']); ?></h1>
-            <a href="eventi.php" class="btn btn-outline-secondary">← Torna</a>
+            <div class="d-flex gap-2">
+                <button class="btn btn-primary" onclick="openEditEventModal()">✏️ Modifica Evento</button>
+                <a href="eventi.php" class="btn btn-outline-secondary">← Torna</a>
+            </div>
         </div>
 
         <!-- Tabs -->
@@ -142,9 +145,7 @@ if (!empty($event['client_id'])) {
                                     <p><strong>Indirizzo:</strong> <?php echo htmlspecialchars($event['address']); ?></p>
                                 <?php endif; ?>
                                 <p><strong>Cliente:</strong> <?php echo htmlspecialchars($clientName ?: '-'); ?></p>
-                                <?php if (!empty($event['guest_count'])): ?>
-                                    <p><strong>Ospiti:</strong> <?php echo htmlspecialchars($event['guest_count']); ?></p>
-                                <?php endif; ?>
+                                <p><strong>Numero di Invitati Previsti:</strong> <?php echo !empty($event['guest_count']) ? htmlspecialchars($event['guest_count']) : '-'; ?></p>
                                 <p><strong>Stato:</strong> <span class="badge bg-<?php echo getStatusColor($event['status']); ?>">
                                     <?php echo htmlspecialchars($event['status']); ?>
                                 </span></p>
@@ -432,9 +433,97 @@ if (!empty($event['client_id'])) {
         </div>
     </div>
 
+    <!-- Modal Modifica Evento -->
+    <div class="modal fade" id="editEventModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Modifica Evento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editEventForm">
+                        <input type="hidden" name="id" id="editEventId">
+                        <div class="mb-3">
+                            <label class="form-label">Titolo</label>
+                            <input type="text" class="form-control" name="title" id="editEventTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Tipo</label>
+                            <select class="form-select" name="type" id="editEventType">
+                                <option value="">Seleziona tipo</option>
+                                <option value="Corporate">Corporate</option>
+                                <option value="Wedding">Wedding</option>
+                                <option value="Birthday">Birthday</option>
+                                <option value="Conference">Conference</option>
+                                <option value="Private">Private</option>
+                                <option value="Other">Altro</option>
+                            </select>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Data *</label>
+                                <input type="date" class="form-control" name="date" id="editEventDate" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Ora</label>
+                                <input type="time" class="form-control" name="time" id="editEventTime">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Location *</label>
+                                <input type="text" class="form-control" name="location" id="editEventLocation" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Numero di Invitati Previsti</label>
+                                <input type="number" class="form-control" name="guest_count" id="editEventGuestCount" min="0" placeholder="0">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Indirizzo</label>
+                            <input type="text" class="form-control" name="address" id="editEventAddress">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Cliente</label>
+                            <select class="form-select" name="client_id" id="editEventClient">
+                                <option value="">Seleziona cliente</option>
+                                <?php
+                                $allClientsData = readJson(__DIR__ . '/clients.json') ?? ['clients' => []];
+                                $allClients = $allClientsData['clients'];
+                                foreach ($allClients as $client): ?>
+                                <option value="<?php echo htmlspecialchars($client['id']); ?>"><?php echo htmlspecialchars($client['name']); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Stato</label>
+                            <select class="form-select" name="status" id="editEventStatus">
+                                <option value="planning">Planning</option>
+                                <option value="confirmed">Confermato</option>
+                                <option value="in_progress">In Corso</option>
+                                <option value="completed">Completato</option>
+                                <option value="cancelled">Cancellato</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Note</label>
+                            <textarea class="form-control" name="notes" id="editEventNotes" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="button" class="btn btn-primary" onclick="saveEventChanges()">Salva Modifiche</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         window.currentEventId = <?php echo json_encode($event['id']); ?>;
+        window.currentEventData = <?php echo json_encode($event); ?>;
     </script>
     <script src="app.js"></script>
     <script src="event-detail.js"></script>

@@ -431,6 +431,53 @@ const setupEventDetail = () => {
 
     loadSuppliers().then(loadEventServices);
     loadTasks();
+
+    // Event detail edit modal functionality
+    window.openEditEventModal = function() {
+        const event = window.currentEventData;
+        if (!event) return;
+
+        document.getElementById('editEventId').value = event.id;
+        document.getElementById('editEventTitle').value = event.title || '';
+        document.getElementById('editEventType').value = event.type || '';
+        document.getElementById('editEventDate').value = event.date || '';
+        document.getElementById('editEventTime').value = event.time || '';
+        document.getElementById('editEventLocation').value = event.location || '';
+        document.getElementById('editEventGuestCount').value = event.guest_count || '';
+        document.getElementById('editEventAddress').value = event.address || '';
+        document.getElementById('editEventClient').value = event.client_id || '';
+        document.getElementById('editEventStatus').value = event.status || 'planning';
+        document.getElementById('editEventNotes').value = event.notes || '';
+
+        new bootstrap.Modal(document.getElementById('editEventModal')).show();
+    };
+
+    window.saveEventChanges = async function() {
+        const form = document.getElementById('editEventForm');
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        // Convert guest_count to integer
+        if (data.guest_count) {
+            data.guest_count = parseInt(data.guest_count, 10);
+        } else {
+            data.guest_count = 0;
+        }
+
+        try {
+            const result = await apiRequest('api_events.php?action=update', 'POST', data);
+            if (result.success) {
+                bootstrap.Modal.getInstance(document.getElementById('editEventModal')).hide();
+                // Reload the page to show updated data
+                window.location.reload();
+            } else {
+                alert(result.error || 'Errore nel salvataggio delle modifiche');
+            }
+        } catch (error) {
+            console.error('Error saving event changes:', error);
+            alert('Errore di comunicazione con il server');
+        }
+    };
 };
 
 function getServiceStatusBadge(status) {
