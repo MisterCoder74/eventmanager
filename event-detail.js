@@ -517,6 +517,76 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// Esporta report evento
+window.exportEventReport = async function(format) {
+    const eventId = window.currentEventId;
+    
+    if (!eventId) {
+        alert('ID evento non specificato');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`api_report.php?action=generate&event_id=${eventId}`, { cache: 'no-store' });
+        const result = await response.json();
+        
+        if (!result.success) {
+            alert(result.error || 'Errore generazione report');
+            return;
+        }
+        
+        const data = result.data;
+        const filename = data.filename.replace(/[^a-zA-Z0-9_\-]/g, '_');
+        
+        if (format === 'html') {
+            // Esporta come file HTML
+            downloadFile(filename + '.html', data.html, 'text/html');
+        } else if (format === 'txt') {
+            // Esporta come file TXT
+            downloadFile(filename + '.txt', data.txt, 'text/plain');
+        } else if (format === 'print') {
+            // Apri finestra di stampa
+            printReport(data.html);
+        }
+    } catch (error) {
+        console.error('Errore:', error);
+        alert('Errore di comunicazione');
+    }
+};
+
+// Scarica file
+function downloadFile(filename, content, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    URL.revokeObjectURL(url);
+}
+
+// Stampa report
+function printReport(htmlContent) {
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    
+    // Attendi che la pagina sia caricata
+    printWindow.onload = function() {
+        printWindow.print();
+        printWindow.close();
+    };
+}
+
+// Funzione helper per scaricare report specifico
+window.downloadEventReport = function(format) {
+    exportEventReport(format);
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     setupEventDetail();
 });
