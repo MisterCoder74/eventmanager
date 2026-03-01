@@ -89,12 +89,40 @@ $clients = $clientsData['clients'];
                             <input type="text" class="form-control" name="title" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Data</label>
-                            <input type="date" class="form-control" name="date" required>
+                            <label class="form-label">Tipo</label>
+                            <select class="form-select" name="type">
+                                <option value="">Seleziona tipo</option>
+                                <option value="Corporate">Corporate</option>
+                                <option value="Wedding">Wedding</option>
+                                <option value="Birthday">Birthday</option>
+                                <option value="Conference">Conference</option>
+                                <option value="Private">Private</option>
+                                <option value="Other">Altro</option>
+                            </select>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Data *</label>
+                                <input type="date" class="form-control" name="date" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Ora</label>
+                                <input type="time" class="form-control" name="time">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Location *</label>
+                                <input type="text" class="form-control" name="location" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Numero di Invitati Previsti</label>
+                                <input type="number" class="form-control" name="guest_count" min="0" placeholder="0">
+                            </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Luogo</label>
-                            <input type="text" class="form-control" name="location">
+                            <label class="form-label">Indirizzo</label>
+                            <input type="text" class="form-control" name="address">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Cliente</label>

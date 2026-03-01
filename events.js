@@ -56,8 +56,12 @@ const setupEventsList = () => {
             const data = result.data;
             form.id.value = data.id;
             form.title.value = data.title;
+            form.type.value = data.type || '';
             form.date.value = data.date;
+            form.time.value = data.time || '';
             form.location.value = data.location;
+            form.guest_count.value = data.guest_count || '';
+            form.address.value = data.address || '';
             form.client_id.value = data.client_id;
             form.status.value = data.status;
             form.notes.value = data.notes;
